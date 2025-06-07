@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Buscador de Personas</title>
+    <style>
+        body {
+          font-family: 'Segoe UI', sans-serif;
+          background: #f4f6f9;
+          margin: 0;
+          padding: 2rem;
+          display: flex;
+          justify-content: center;
+        }
+
+        .container {
+          max-width: 600px;
+          width: 100%;
+          background: white;
+          padding: 2rem;
+          border-radius: 12px;
+          box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+          text-align: center;
+          color: #333;
+        }
+
+        input[type="text"] {
+          width: 100%;
+          padding: 0.8rem;
+          margin: 1rem 0;
+          border: 1px solid #ccc;
+          border-radius: 8px;
+          font-size: 1rem;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+        }
+
+        li {
+          padding: 0.8rem;
+          border-bottom: 1px solid #eee;
+        }
+
+        li:last-child {
+          border-bottom: none;
+        }
+
+        .nombre {
+          font-weight: bold;
+        }
+
+        .sin-resultados {
+          text-align: center;
+          color: #777;
+          margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Buscar Personas</h1>
+    <input type="text" id="buscador" placeholder="Buscar por nombre..." autocomplete="off" />
+    <ul id="lista-personas"></ul>
+    <div id="mensaje" class="sin-resultados" style="display:none;">No se encontraron personas.</div>
+</div>
+
+<script>
+    const buscador = document.getElementById('buscador');
+    const lista = document.getElementById('lista-personas');
+    const mensaje = document.getElementById('mensaje');
+
+    let timeout = null; // para debounce
+
+    buscador.addEventListener('input', () => {
+      clearTimeout(timeout);
+      const filtro = buscador.value.trim();
+
+      if (filtro.length === 0) {
+        lista.innerHTML = '';
+        mensaje.style.display = 'none';
+        return;
+      }
+
+      // Esperar 300ms después de que el usuario dejó de escribir (debounce)
+      timeout = setTimeout(() => {
+        buscarPersonas(filtro);
+      }, 300);
+    });
+
+    function buscarPersonas(filtro) {
+      fetch(`http://localhost:8080/api/v1/personas/search?filtro=${encodeURIComponent(filtro)}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Error en la búsqueda');
+          return res.json();
+        })
+        .then(data => {
+          mostrarResultados(data);
+        })
+        .catch(() => {
+          lista.innerHTML = '';
+          mensaje.textContent = 'Error al buscar personas.';
+          mensaje.style.display = 'block';
+        });
+    }
+
+    function mostrarResultados(personas) {
+      lista.innerHTML = '';
+
+      if (!personas || personas.length === 0) {
+        mensaje.textContent = 'No se encontraron personas.';
+        mensaje.style.display = 'block';
+        return;
+      }
+
+      mensaje.style.display = 'none';
+
+      personas.forEach(p => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="nombre">${p.nombre}</span> ${p.apellido}`;
+        lista.appendChild(li);
+      });
+    }
+</script>
+</body>
+</html>
